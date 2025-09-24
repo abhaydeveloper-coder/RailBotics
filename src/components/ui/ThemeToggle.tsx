@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Theme } from '../../types';
 
@@ -9,7 +9,7 @@ export const ThemeToggle: React.FC = () => {
   const themes: Array<{ key: Theme; label: string; icon: React.ReactNode }> = [
     { key: 'light', label: 'Light', icon: <Sun className="w-4 h-4" /> },
     { key: 'dark', label: 'Dark', icon: <Moon className="w-4 h-4" /> },
-    { key: 'high-contrast', label: 'High Contrast', icon: <Monitor className="w-4 h-4" /> }
+    
   ];
 
   return (

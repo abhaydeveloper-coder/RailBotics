@@ -40,6 +40,10 @@ export interface Conflict {
   };
   status: 'Pending' | 'Resolved' | 'Overridden';
   timestamp: string;
+
+  // FIXED PROPERTIES
+  overrideReason?: string; // Should be an optional string
+  resolvedAt?: string;     // Should be an optional string (to store the ISO date)
 }
 
 export interface AuditLog {

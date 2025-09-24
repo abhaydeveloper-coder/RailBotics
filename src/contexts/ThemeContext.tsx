@@ -29,19 +29,17 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('railway-theme', theme);
     
-    // Apply theme to document
     const root = document.documentElement;
     const body = document.body;
     
-    // Remove all theme classes
-    root.classList.remove('light', 'dark', 'high-contrast');
-    body.classList.remove('light', 'dark', 'high-contrast');
+    // 'high-contrast' has been removed from this list
+    root.classList.remove('light', 'dark');
+    body.classList.remove('light', 'dark');
     
     // Add current theme class
     root.classList.add(theme);
     body.classList.add(theme);
     
-    // Set data attribute for additional styling
     root.setAttribute('data-theme', theme);
   }, [theme]);
 

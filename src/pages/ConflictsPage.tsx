@@ -3,16 +3,16 @@ import { motion } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-import { Input } from '../components/ui/Input'; // Assuming you have an Input component
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
   Filter,
   Eye,
   XCircle,
   Settings,
-  Save
+  Save,
+  Edit // NEW: Imported Edit icon
 } from 'lucide-react';
 import conflictsData from '../data/conflicts.json';
 import { Conflict } from '../types';
@@ -37,18 +37,41 @@ export const ConflictsPage: React.FC = () => {
     setConflicts(prev =>
       prev.map(conflict =>
         conflict.id === conflictId
-          ? { ...conflict, status: 'Resolved' as const }
+          ? { ...conflict, status: 'Resolved' as const, resolvedAt: new Date().toISOString() }
           : conflict
       )
     );
-    
+
     showToast({
       type: 'success',
       title: 'Conflict Resolved',
       message: 'The conflict has been resolved successfully.'
     });
-    
+
     setSelectedConflict(null);
+  };
+
+  // NEW: Function to revert a conflict to Pending status
+  const handleEdit = (conflictId: string) => {
+    setConflicts(prev =>
+      prev.map(conflict => {
+        if (conflict.id === conflictId) {
+          // FIXED: Safely create a new object without resolution-specific properties
+          const { overrideReason, resolvedAt, ...restOfConflict } = conflict;
+          return {
+            ...restOfConflict,
+            status: 'Pending' as const,
+          };
+        }
+        return conflict;
+      })
+    );
+
+    showToast({
+      type: 'info',
+      title: 'Conflict Re-opened',
+      message: 'The conflict status has been reset to Pending.'
+    });
   };
 
   const handleOverride = (conflictId: string) => {
@@ -64,22 +87,22 @@ export const ConflictsPage: React.FC = () => {
     setConflicts(prev =>
       prev.map(conflict =>
         conflict.id === conflictId
-          ? { 
-              ...conflict, 
-              status: 'Overridden' as const,
-              overrideReason: overrideReason,
-              resolvedAt: new Date().toISOString()
-            }
+          ? {
+            ...conflict,
+            status: 'Overridden' as const,
+            overrideReason: overrideReason,
+            resolvedAt: new Date().toISOString()
+          }
           : conflict
       )
     );
-    
+
     showToast({
       type: 'warning',
       title: 'Conflict Overridden',
       message: 'The conflict has been manually overridden.'
     });
-    
+
     setOverrideConflict(null);
     setOverrideReason('');
   };
@@ -126,7 +149,7 @@ export const ConflictsPage: React.FC = () => {
   const pendingCount = conflicts.filter(c => c.status === 'Pending').length;
   const resolvedCount = conflicts.filter(c => c.status === 'Resolved').length;
   const overriddenCount = conflicts.filter(c => c.status === 'Overridden').length;
-  const criticalCount = conflicts.filter(c => c.severity === 'Critical' && c.status === 'Pending').length;
+  // FIXED: Removed the unused 'criticalCount' variable
 
   return (
     <div className="space-y-6">
@@ -136,7 +159,7 @@ export const ConflictsPage: React.FC = () => {
         <p className="text-gray-600">Monitor and resolve railway section conflicts</p>
       </div>
 
-      {/* Stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-6">
           <div className="flex items-center">
@@ -226,32 +249,34 @@ export const ConflictsPage: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+              className="border rounded-lg p-4 hover:shadow-md transition-shadow flex flex-col"
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getSeverityColor(conflict.severity)}`}>
-                  {conflict.severity}
-                </span>
-                <div className={`flex items-center space-x-1 ${getStatusColor(conflict.status)}`}>
-                  {getStatusIcon(conflict.status)}
-                  <span className="text-sm font-medium">{conflict.status}</span>
+              <div className="flex-grow">
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getSeverityColor(conflict.severity)}`}>
+                    {conflict.severity}
+                  </span>
+                  <div className={`flex items-center space-x-1 ${getStatusColor(conflict.status)}`}>
+                    {getStatusIcon(conflict.status)}
+                    <span className="text-sm font-medium">{conflict.status}</span>
+                  </div>
+                </div>
+
+                <h3 className="font-semibold text-gray-900 mb-2">{conflict.type}</h3>
+                <p className="text-gray-600 text-sm mb-3 line-clamp-2">{conflict.description}</p>
+
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                  <span>Trains: {conflict.trainA}, {conflict.trainB}</span>
+                  <span>{new Date(conflict.timestamp).toLocaleTimeString()}</span>
+                </div>
+
+                <div className="bg-blue-50 p-3 rounded mb-4">
+                  <p className="text-blue-900 text-sm font-medium mb-1">Recommendation:</p>
+                  <p className="text-blue-800 text-sm">{conflict.recommendation.action}</p>
                 </div>
               </div>
 
-              <h3 className="font-semibold text-gray-900 mb-2">{conflict.type}</h3>
-              <p className="text-gray-600 text-sm mb-3 line-clamp-2">{conflict.description}</p>
-
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                <span>Trains: {conflict.trainA}, {conflict.trainB}</span>
-                <span>{new Date(conflict.timestamp).toLocaleTimeString()}</span>
-              </div>
-
-              <div className="bg-blue-50 p-3 rounded mb-4">
-                <p className="text-blue-900 text-sm font-medium mb-1">Recommendation:</p>
-                <p className="text-blue-800 text-sm">{conflict.recommendation.action}</p>
-              </div>
-
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 mt-auto pt-4 border-t">
                 <Button
                   onClick={() => setSelectedConflict(conflict)}
                   size="sm"
@@ -261,7 +286,8 @@ export const ConflictsPage: React.FC = () => {
                   <Eye className="w-4 h-4 mr-1" />
                   Details
                 </Button>
-                {conflict.status === 'Pending' && (
+                {/* NEW: Conditional rendering for action buttons */}
+                {conflict.status === 'Pending' ? (
                   <>
                     <Button
                       onClick={() => handleResolve(conflict.id)}
@@ -275,13 +301,23 @@ export const ConflictsPage: React.FC = () => {
                     <Button
                       onClick={() => setOverrideConflict(conflict)}
                       size="sm"
-                      variant="warning"
+                      variant="secondary" // FIXED: Changed variant from "warning" to "secondary"
                       className="flex-1"
                     >
                       <Settings className="w-4 h-4 mr-1" />
                       Override
                     </Button>
                   </>
+                ) : (
+                  <Button
+                    onClick={() => handleEdit(conflict.id)}
+                    size="sm"
+                    variant="secondary"
+                    className="flex-1"
+                  >
+                    <Edit className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
                 )}
               </div>
             </motion.div>
@@ -289,6 +325,7 @@ export const ConflictsPage: React.FC = () => {
         </div>
       </Card>
 
+      {/* --- ALL MODALS REMAIN THE SAME --- */}
       {/* Conflict Detail Modal */}
       {selectedConflict && (
         <Modal
@@ -367,7 +404,7 @@ export const ConflictsPage: React.FC = () => {
               <h4 className="font-semibold text-green-900 mb-2">System Recommendation</h4>
               <p className="text-green-800 mb-2">{selectedConflict.recommendation.action}</p>
               <p className="text-green-700 text-sm mb-3">{selectedConflict.recommendation.details}</p>
-              
+
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium">Estimated Delay:</span> {selectedConflict.recommendation.estimatedDelay} minutes
@@ -422,7 +459,7 @@ export const ConflictsPage: React.FC = () => {
                 </Button>
                 <Button
                   onClick={() => setOverrideConflict(selectedConflict)}
-                  variant="warning"
+                  variant="secondary" // FIXED: Changed variant from "warning" to "secondary"
                 >
                   <Settings className="w-4 h-4 mr-2" />
                   Manual Override
@@ -459,7 +496,7 @@ export const ConflictsPage: React.FC = () => {
 
             <div className="bg-yellow-50 p-3 rounded-lg">
               <p className="text-yellow-800 text-sm">
-                <strong>Warning:</strong> You are about to manually override this conflict. 
+                <strong>Warning:</strong> You are about to manually override this conflict.
                 Please provide a detailed reason for this action.
               </p>
             </div>
@@ -490,7 +527,7 @@ export const ConflictsPage: React.FC = () => {
               </Button>
               <Button
                 onClick={() => handleOverride(overrideConflict.id)}
-                variant="warning"
+                variant="secondary" // FIXED: Changed variant from "warning" to "secondary"
                 disabled={!overrideReason.trim()}
               >
                 <Save className="w-4 h-4 mr-2" />

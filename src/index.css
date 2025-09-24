@@ -63,22 +63,6 @@
   border-color: rgb(107 114 128) !important;
 }
 
-.high-contrast {
-  --color-background: 0 0 0; /* black */
-  --color-surface: 255 255 255; /* white */
-  --color-text-primary: 255 255 255; /* white on dark, black on light */
-  --color-text-secondary: 156 163 175; /* gray-400 */
-  --color-primary: 0 0 255; /* blue */
-  --color-error: 255 0 0; /* red */
-  --color-success: 0 128 0; /* green */
-  --color-warning: 255 165 0; /* orange */
-}
-
-.high-contrast body {
-  background-color: black !important;
-  color: white !important;
-}
-
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

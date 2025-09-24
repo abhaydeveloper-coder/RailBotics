@@ -227,7 +227,7 @@ export const SettingsPage: React.FC = () => {
                 <select
                   value={systemSettings.autoRefreshInterval}
                   onChange={(e) => handleSystemSettingChange('autoRefreshInterval', parseInt(e.target.value))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                 >
                   <option value={10}>10 seconds</option>
                   <option value={30}>30 seconds</option>
@@ -243,7 +243,7 @@ export const SettingsPage: React.FC = () => {
                 <select
                   value={systemSettings.conflictDetectionSensitivity}
                   onChange={(e) => handleSystemSettingChange('conflictDetectionSensitivity', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                 >
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
@@ -315,7 +315,7 @@ export const SettingsPage: React.FC = () => {
                 <select
                   value={systemSettings.backupFrequency}
                   onChange={(e) => handleSystemSettingChange('backupFrequency', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                 >
                   <option value="Hourly">Every Hour</option>
                   <option value="Daily">Daily</option>

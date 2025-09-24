@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Play,
@@ -76,20 +76,30 @@ const SimulationResults: React.FC<SimulationResultsProps> = ({ results }) => {
         <h3 className="text-xl font-semibold mb-6">Performance Impact Analysis</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {(['Punctuality', 'Avg Delay', 'Throughput', 'Utilization'] as const).map(key => {
-            const lowerIsBetter = key === 'Avg Delay' || key === 'Utilization';
-            const unit = key === 'Punctuality' || key === 'Utilization' ? '%' : key === 'Avg Delay' ? ' min' : '/hr';
-            const dataKey = key === 'Avg Delay' ? 'averageDelay' : key.toLowerCase();
+            const lowerIsBetter = key === 'Avg Delay';
+            const unit = (key === 'Punctuality' || key === 'Utilization' || key === 'Throughput') ? '%' : ' min';
+
+            let dataKey: string;
+            if (key === 'Avg Delay') {
+              dataKey = 'averageDelay';
+            } else if (key === 'Throughput') {
+              dataKey = 'throughputPercentage';
+            } else {
+              dataKey = key.toLowerCase();
+            }
+
             const before = results.before[dataKey as keyof typeof results.before];
             const after = results.after[dataKey as keyof typeof results.after];
+
             return (
               <div key={key} className="bg-gray-50 p-4 rounded-lg text-center">
                 <h4 className="font-semibold text-gray-700 mb-2">{key}</h4>
-                <p className="text-3xl font-bold text-gray-900">{after}{unit}</p>
+                <p className="text-3xl font-bold text-gray-900">{after.toFixed(0)}{unit}</p>
                 <div className={`flex items-center justify-center space-x-1 font-semibold ${getChangeColor(before, after, lowerIsBetter)}`}>
                   {getChangeIcon(before, after, lowerIsBetter)}
                   <span>{formatChange(before, after, unit)}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">from {before}{unit}</p>
+                <p className="text-xs text-gray-500 mt-1">from {before.toFixed(0)}{unit}</p>
               </div>
             );
           })}
@@ -126,7 +136,6 @@ const SimulationResults: React.FC<SimulationResultsProps> = ({ results }) => {
           </ResponsiveContainer>
         </Card>
       </div>
-
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">AI-Generated Action Plan</h3>
         <div className="space-y-3">
@@ -159,10 +168,33 @@ export const SimulationPage: React.FC = () => {
     { id: 'passenger', title: 'Medical Emergency', description: 'Passenger medical emergency requiring immediate station stop', icon: <AlertTriangle className="w-6 h-6" />, color: 'text-pink-600', bgColor: 'bg-pink-100', impact: 'Moderate impact on schedule' }
   ];
 
+  const priorityWeights = { Express: 10, Local: 4, Freight: 2, Special: 7 };
+  const mockActiveTrains = [
+    { id: 'T1', type: 'Express', speed: 110, delay: 0 }, { id: 'T2', type: 'Express', speed: 120, delay: 5 },
+    { id: 'T3', type: 'Local', speed: 60, delay: 10 }, { id: 'T4', type: 'Local', speed: 55, delay: 0 },
+    { id: 'T5', type: 'Local', speed: 65, delay: 2 }, { id: 'T6', type: 'Freight', speed: 45, delay: 20 },
+    { id: 'T7', type: 'Freight', speed: 50, delay: 15 }
+  ];
+
+  const calculateThroughputScore = (trains: typeof mockActiveTrains) => {
+    return trains.reduce((score, train) => {
+      const weight = priorityWeights[train.type as keyof typeof priorityWeights] || 0;
+      const delayPenalty = Math.max(0, 1 - (train.delay / 60));
+      return score + (weight * train.speed * delayPenalty);
+    }, 0);
+  };
+
+  const maxThroughputScore = useMemo(() => {
+    return mockActiveTrains.reduce((score, train) => {
+      const weight = priorityWeights[train.type as keyof typeof priorityWeights] || 0;
+      return score + (weight * train.speed);
+    }, 0);
+  }, []);
+
   const baselineData = {
     punctuality: 92,
     averageDelay: 8,
-    throughput: 24,
+    throughputPercentage: maxThroughputScore > 0 ? Math.round((calculateThroughputScore(mockActiveTrains) / maxThroughputScore) * 100) : 0,
     utilization: 76,
     delaysByType: [
       { type: 'Express', before: 6 },
@@ -175,9 +207,15 @@ export const SimulationPage: React.FC = () => {
     ]
   };
 
-  /**
-   * Generates a random integer within a given range.
-   */
+  const scenarioRecommendations = {
+    delay: ['Prioritize high-speed trains and adjust local train schedules to minimize platform congestion.', 'Communicate revised ETAs to passengers and connecting stations immediately.', 'Analyze the root cause of the delay to prevent future occurrences.', 'Temporarily increase headway between following trains to create buffer time.'],
+    breakdown: ['Dispatch the nearest emergency engineering team to the breakdown location.', 'Reroute all approaching traffic to alternative tracks or loop lines.', 'Arrange for a rescue locomotive to tow the failed train to the nearest yard.', 'Provide clear updates to affected passengers regarding the rescue operation timeline.'],
+    weather: ['Impose a temporary speed restriction across the entire affected section.', 'Increase patrol frequency to monitor track conditions, signals, and overhead lines.', 'Activate contingency plans for potential waterlogging at low-lying stations.', 'Advise passengers of potential widespread delays and offer ticket flexibility.'],
+    maintenance: ['Establish a clear block corridor for the maintenance crew with safety protocols.', 'Divert all traffic using pre-defined alternative routes for the duration of the repair.', 'Coordinate with station masters to manage passenger flow and platform changes.', 'Conduct a post-repair inspection and speed test before resuming normal operations.'],
+    signal: ['Switch to manual authorization protocols for train movement in the affected area.', 'Deploy technical staff to the nearest signal cabin for on-site diagnosis.', 'Instruct locomotive pilots to proceed with extreme caution and reduced visibility rules.', 'Run a full system diagnostic after the fault is rectified to ensure system integrity.'],
+    passenger: ['Arrange for paramedics and station staff to meet the train at the next designated stop.', 'Make onboard announcements to inform other passengers of the unscheduled stop.', 'Coordinate with control to minimize the delay to the schedule post-emergency.', 'Log the incident and the total delay incurred for performance review.']
+  };
+
   const getRandomInRange = (min: number, max: number) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   };
@@ -196,45 +234,43 @@ export const SimulationPage: React.FC = () => {
   };
 
   const generateSimulationResults = (scenarioId: string) => {
-    // Each scenario now has a min/max range for its impact.
     const impacts = {
-      delay: { punctuality: [-20, -12], delay: [10, 18], throughput: [-4, -2], utilization: [8, 15], delayImpactFactor: { Express: 1.8, Local: 1.3, Freight: 1.1 } },
-      breakdown: { punctuality: [-30, -20], delay: [15, 25], throughput: [-8, -5], utilization: [15, 20], delayImpactFactor: { Express: 2.5, Local: 1.8, Freight: 1.5 } },
-      weather: { punctuality: [-25, -15], delay: [12, 20], throughput: [-5, -3], utilization: [10, 18], delayImpactFactor: { Express: 1.5, Local: 2.0, Freight: 2.2 } },
-      maintenance: { punctuality: [-22, -14], delay: [14, 22], throughput: [-6, -4], utilization: [12, 18], delayImpactFactor: { Express: 1.9, Local: 1.9, Freight: 1.9 } },
-      signal: { punctuality: [-35, -25], delay: [20, 30], throughput: [-10, -7], utilization: [18, 25], delayImpactFactor: { Express: 2.8, Local: 2.2, Freight: 1.8 } },
-      passenger: { punctuality: [-15, -8], delay: [8, 15], throughput: [-3, -1], utilization: [5, 10], delayImpactFactor: { Express: 1.4, Local: 1.1, Freight: 1.0 } }
+      delay: { punctuality: [-20, -12], delay: [10, 18], utilization: [8, 15], speedFactor: { Express: 0.8, Local: 0.9, Freight: 1.0 }, delayImpactFactor: { Express: 1.8, Local: 1.3, Freight: 1.1 } },
+      breakdown: { punctuality: [-30, -20], delay: [15, 25], utilization: [15, 20], speedFactor: { Express: 0.6, Local: 0.7, Freight: 0.5 }, delayImpactFactor: { Express: 2.5, Local: 1.8, Freight: 1.5 } },
+      weather: { punctuality: [-25, -15], delay: [12, 20], utilization: [10, 18], speedFactor: { Express: 0.7, Local: 0.7, Freight: 0.6 }, delayImpactFactor: { Express: 1.5, Local: 2.0, Freight: 2.2 } },
+      maintenance: { punctuality: [-22, -14], delay: [14, 22], utilization: [12, 18], speedFactor: { Express: 0.75, Local: 0.8, Freight: 0.6 }, delayImpactFactor: { Express: 1.9, Local: 1.9, Freight: 1.9 } },
+      signal: { punctuality: [-35, -25], delay: [20, 30], utilization: [18, 25], speedFactor: { Express: 0.5, Local: 0.6, Freight: 0.6 }, delayImpactFactor: { Express: 2.8, Local: 2.2, Freight: 1.8 } },
+      passenger: { punctuality: [-15, -8], delay: [8, 15], utilization: [5, 10], speedFactor: { Express: 0.9, Local: 0.95, Freight: 1.0 }, delayImpactFactor: { Express: 1.4, Local: 1.1, Freight: 1.0 } }
     };
 
     const impact = impacts[scenarioId as keyof typeof impacts];
 
-    // **DYNAMIC DATA GENERATION**
+    const simulatedTrains = mockActiveTrains.map(train => ({
+      ...train,
+      speed: Math.round(train.speed * (impact.speedFactor[train.type as keyof typeof impact.speedFactor] || 1)),
+      delay: train.delay + getRandomInRange(impact.delay[0], impact.delay[1] / 2) // Also increase delay in simulation
+    }));
+
+    const newThroughputScore = calculateThroughputScore(simulatedTrains);
+
     const afterMetrics = {
       punctuality: Math.max(0, baselineData.punctuality + getRandomInRange(impact.punctuality[0], impact.punctuality[1])),
       averageDelay: baselineData.averageDelay + getRandomInRange(impact.delay[0], impact.delay[1]),
-      throughput: Math.max(0, baselineData.throughput + getRandomInRange(impact.throughput[0], impact.throughput[1])),
+      throughputPercentage: maxThroughputScore > 0 ? Math.round((newThroughputScore / maxThroughputScore) * 100) : 0,
       utilization: Math.min(100, baselineData.utilization + getRandomInRange(impact.utilization[0], impact.utilization[1])),
     };
-    
-    // Simulate new delay times for each train type
+
     const newDelaysByType = baselineData.delaysByType.map(train => ({
-        type: train.type,
-        before: train.before,
-        after: Math.round(train.before * impact.delayImpactFactor[train.type as keyof typeof impact.delayImpactFactor]) + getRandomInRange(1, 5)
+      type: train.type,
+      before: train.before,
+      after: Math.round(train.before * impact.delayImpactFactor[train.type as keyof typeof impact.delayImpactFactor]) + getRandomInRange(1, 5)
     }));
-
-    // Simulate a new punctuality trend
     const newPunctualityTrend = baselineData.punctualityTrend.map(point => ({
-        ...point,
-        after: Math.max(50, point.before + getRandomInRange(impact.punctuality[0], impact.punctuality[1]))
+      ...point,
+      after: Math.max(50, point.before + getRandomInRange(impact.punctuality[0], impact.punctuality[1]))
     }));
 
-    const recommendations = [
-      'Implement dynamic rescheduling for affected trains to minimize cascading delays.',
-      'Notify passengers via automated announcement systems and mobile alerts about potential delays and connections.',
-      'Deploy maintenance or emergency response teams to the affected area immediately.',
-      'Update all stakeholders and maintain continuous monitoring of the section.'
-    ];
+    const recommendations = scenarioRecommendations[scenarioId as keyof typeof scenarioRecommendations];
 
     return {
       scenario: scenarioId,
@@ -286,7 +322,7 @@ export const SimulationPage: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center"><div className="bg-green-100 p-4 rounded-lg mb-3 inline-block"><Target className="w-8 h-8 text-green-600" /></div><p className="text-2xl font-bold text-gray-900">{baselineData.punctuality}%</p><p className="text-sm text-gray-600">Punctuality</p></div>
               <div className="text-center"><div className="bg-yellow-100 p-4 rounded-lg mb-3 inline-block"><Clock className="w-8 h-8 text-yellow-600" /></div><p className="text-2xl font-bold text-gray-900">{baselineData.averageDelay} min</p><p className="text-sm text-gray-600">Avg Delay</p></div>
-              <div className="text-center"><div className="bg-blue-100 p-4 rounded-lg mb-3 inline-block"><Train className="w-8 h-8 text-blue-600" /></div><p className="text-2xl font-bold text-gray-900">{baselineData.throughput}/hr</p><p className="text-sm text-gray-600">Throughput</p></div>
+              <div className="text-center"><div className="bg-blue-100 p-4 rounded-lg mb-3 inline-block"><Train className="w-8 h-8 text-blue-600" /></div><p className="text-2xl font-bold text-gray-900">{baselineData.throughputPercentage}%</p><p className="text-sm text-gray-600">Throughput</p></div>
               <div className="text-center"><div className="bg-purple-100 p-4 rounded-lg mb-3 inline-block"><BarChart3 className="w-8 h-8 text-purple-600" /></div><p className="text-2xl font-bold text-gray-900">{baselineData.utilization}%</p><p className="text-sm text-gray-600">Utilization</p></div>
             </div>
           </Card>

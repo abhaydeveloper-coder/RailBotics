@@ -8,6 +8,8 @@ import { ThemeToggle } from '../components/ui/ThemeToggle';
 // NEW: Import Mail icon for the forgot password form
 import { Train, CheckCircle, Mail } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
+import bgImage from '../images/Indian-railway-background.jpg';
+import logo from '../images/indian-railways-logo.jpg';
 
 
 export const LoginPage: React.FC = () => {
@@ -120,7 +122,7 @@ export const LoginPage: React.FC = () => {
     <div
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{
-        backgroundImage: `url('/src/images/Indian-railway-background.jpg')`,
+        backgroundImage: `url(${bgImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center 30%',
         backgroundRepeat: 'no-repeat',
@@ -161,7 +163,7 @@ export const LoginPage: React.FC = () => {
                 className="mr-4"
               >
                 <img
-                  src="/src/images/indian-railways-logo.jpg"
+                  src={logo}
                   alt="Indian Railways Official Logo"
                   className="w-14 h-14 rounded-full shadow-md border border-red-100"
                 />

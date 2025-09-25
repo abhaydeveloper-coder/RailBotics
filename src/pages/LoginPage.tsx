@@ -144,7 +144,7 @@ export const LoginPage: React.FC = () => {
             <div className="flex items-center">
               <div className="bg-white rounded-full p-1 mr-3">
                 <img
-                  src="/src/images/indian-railways-logo.jpg"
+                 src={logo}
                   alt="Indian Railways Logo"
                   className="h-6 w-6 rounded-full object-cover"
                 />

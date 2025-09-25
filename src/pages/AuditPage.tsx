@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { 
-  Download, 
-  Filter, 
-  Calendar, 
-  User, 
+import {
+  Download,
+  Filter,
+  Calendar,
+  User,
   FileText,
   CheckCircle,
   AlertTriangle,
@@ -42,7 +42,7 @@ export const AuditPage: React.FC = () => {
       };
 
       setLogs(prev => [newLog, ...prev].slice(0, 50)); // Keep only latest 50 logs
-    }, 30000); // Add new log every 30 seconds
+    }, 15000); // Add new log every 15 seconds
 
     return () => clearInterval(interval);
   }, []);
@@ -50,20 +50,20 @@ export const AuditPage: React.FC = () => {
   const filteredLogs = logs.filter(log => {
     const matchesAction = filterAction === 'All' || log.action === filterAction;
     const matchesStatus = filterStatus === 'All' || log.status === filterStatus;
-    const matchesSearch = log.trainId.includes(searchTerm) || 
-                         log.controller.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         log.action.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch = log.trainId.includes(searchTerm) ||
+      log.controller.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.action.toLowerCase().includes(searchTerm.toLowerCase());
+
     // Date filtering
     const logDate = new Date(log.timestamp);
     const today = new Date();
     const isToday = logDate.toDateString() === today.toDateString();
     const isThisWeek = (today.getTime() - logDate.getTime()) <= (7 * 24 * 60 * 60 * 1000);
-    
+
     let matchesDate = true;
     if (dateRange === 'today') matchesDate = isToday;
     else if (dateRange === 'week') matchesDate = isThisWeek;
-    
+
     return matchesAction && matchesStatus && matchesSearch && matchesDate;
   });
 
@@ -71,7 +71,8 @@ export const AuditPage: React.FC = () => {
     const csvContent = [
       ['Timestamp', 'Controller', 'Action', 'Train ID', 'Suggestion', 'Action Taken', 'Override Reason', 'Impact', 'Status'],
       ...filteredLogs.map(log => [
-        new Date(log.timestamp).toLocaleString(),
+        // FIX: Replaced the comma in the timestamp to prevent it from splitting into two cells.
+        new Date(log.timestamp).toLocaleString().replace(',', ''),
         log.controller,
         log.action,
         log.trainId,
@@ -217,7 +218,7 @@ export const AuditPage: React.FC = () => {
       <Card className="p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 space-y-4 md:space-y-0">
           <h2 className="text-xl font-semibold">Activity Log</h2>
-          
+
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <div className="flex items-center space-x-2">
               <Search className="w-4 h-4 text-gray-400" />
@@ -229,7 +230,7 @@ export const AuditPage: React.FC = () => {
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <Calendar className="w-4 h-4 text-gray-400" />
               <select
@@ -283,7 +284,7 @@ export const AuditPage: React.FC = () => {
                   <div className="flex-shrink-0 mt-1">
                     {getActionIcon(log.action)}
                   </div>
-                  
+
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center space-x-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getActionColor(log.action)}`}>
@@ -292,7 +293,7 @@ export const AuditPage: React.FC = () => {
                       <span className="text-sm font-medium text-gray-900">Train {log.trainId}</span>
                       <span className="text-sm text-gray-500">by {log.controller}</span>
                     </div>
-                    
+
                     <div className="text-sm text-gray-700">
                       <p><span className="font-medium">Suggestion:</span> {log.suggestion}</p>
                       <p><span className="font-medium">Action Taken:</span> {log.actionTaken}</p>
@@ -303,7 +304,7 @@ export const AuditPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col items-end space-y-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(log.status)}`}>
                     {log.status}
@@ -316,7 +317,7 @@ export const AuditPage: React.FC = () => {
               </div>
             </motion.div>
           ))}
-          
+
           {filteredLogs.length === 0 && (
             <div className="text-center py-12">
               <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />

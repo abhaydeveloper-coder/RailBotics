@@ -17,6 +17,7 @@ import {
 import conflictsData from '../data/conflicts.json';
 import { Conflict } from '../types';
 import { useToast } from '../hooks/useToast';
+import { format } from 'date-fns';
 
 export const ConflictsPage: React.FC = () => {
   const [conflicts, setConflicts] = useState<Conflict[]>(conflictsData as Conflict[]);
@@ -440,7 +441,8 @@ export const ConflictsPage: React.FC = () => {
               <h4 className="font-semibold mb-3">Timeline</h4>
               <div className="flex items-center text-sm text-gray-600">
                 <Clock className="w-4 h-4 mr-2" />
-                <span>Detected at: {new Date(selectedConflict.timestamp).toLocaleString()}</span>
+                <span>Detected at: {format(new Date(selectedConflict.timestamp), 'dd-MM-yyyy p')}</span>
+
               </div>
               <div className="flex items-center text-sm text-gray-600 mt-2">
                 <Clock className="w-4 h-4 mr-2" />

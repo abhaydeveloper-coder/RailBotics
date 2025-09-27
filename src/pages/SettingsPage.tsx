@@ -13,14 +13,14 @@ import {
   Bell,
   Shield,
   Save,
-  RefreshCw
+  RefreshCw,
+  BellOff
 } from 'lucide-react';
-import { BellOff, CheckCircle } from 'lucide-react';
 import { useTimer } from '../contexts/TimerContext';
 
 export const SettingsPage: React.FC = () => {
   const { showToast } = useToast();
-  const { isAudioUnlocked, unlockAudio } = useTimer();
+  const { isAudioUnlocked, unlockAudio, isAlarmEnabled, toggleAlarmPreference } = useTimer();
 
   const [sectionConfig, setSectionConfig] = useState({
     sectionName: 'Northern Railway - Delhi Division',
@@ -145,24 +145,44 @@ export const SettingsPage: React.FC = () => {
             </div>
             <h2 className="text-xl font-semibold">Audio Settings</h2>
           </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Audible Alarms</h3>
-              <p className="text-gray-500 text-sm">
-                Enable sound notifications for critical conflict alerts. Requires one-time user interaction.
-              </p>
-            </div>
-            {isAudioUnlocked ? (
-              <div className="flex items-center space-x-2 text-green-600">
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-medium">Sound Enabled for this Session</span>
+
+          {/* Enable Audio Row */}
+          {!isAudioUnlocked && (
+            <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div>
+                <h3 className="font-medium text-yellow-900">Browser Permission Required</h3>
+                <p className="text-yellow-700 text-sm">
+                  Click the button to enable sound for this session.
+                </p>
               </div>
-            ) : (
               <Button onClick={unlockAudio} variant="secondary">
                 <BellOff className="w-4 h-4 mr-2" />
                 Enable Sound Alerts
               </Button>
-            )}
+            </div>
+          )}
+
+          {/* Toggle Switch Row */}
+          <div className={`flex items-center justify-between mt-4 ${!isAudioUnlocked ? 'opacity-50' : ''}`}>
+            <div>
+              <h3 className="font-medium">Audible Alarm Toggle</h3>
+              <p className="text-gray-500 text-sm">
+                Turn critical conflict alarms on or off.
+              </p>
+            </div>
+            <button
+              onClick={toggleAlarmPreference}
+              disabled={!isAudioUnlocked}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:cursor-not-allowed ${
+                isAlarmEnabled ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  isAlarmEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
         </Card>
       </motion.div>

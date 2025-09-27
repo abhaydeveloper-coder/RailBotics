@@ -15,9 +15,13 @@ import {
   Save,
   RefreshCw
 } from 'lucide-react';
+import { BellOff, CheckCircle } from 'lucide-react';
+import { useTimer } from '../contexts/TimerContext';
 
 export const SettingsPage: React.FC = () => {
   const { showToast } = useToast();
+  const { isAudioUnlocked, unlockAudio } = useTimer();
+
   const [sectionConfig, setSectionConfig] = useState({
     sectionName: 'Northern Railway - Delhi Division',
     totalTracks: 6,
@@ -127,6 +131,41 @@ export const SettingsPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* NEW: Audio Settings Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0 }}
+      >
+        <Card className="p-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="bg-orange-100 p-2 rounded-lg">
+              <Bell className="w-5 h-5 text-orange-600" />
+            </div>
+            <h2 className="text-xl font-semibold">Audio Settings</h2>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium">Audible Alarms</h3>
+              <p className="text-gray-500 text-sm">
+                Enable sound notifications for critical conflict alerts. Requires one-time user interaction.
+              </p>
+            </div>
+            {isAudioUnlocked ? (
+              <div className="flex items-center space-x-2 text-green-600">
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-medium">Sound Enabled for this Session</span>
+              </div>
+            ) : (
+              <Button onClick={unlockAudio} variant="secondary">
+                <BellOff className="w-4 h-4 mr-2" />
+                Enable Sound Alerts
+              </Button>
+            )}
+          </div>
+        </Card>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Section Configuration */}

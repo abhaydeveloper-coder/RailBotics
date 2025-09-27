@@ -18,6 +18,8 @@ import conflictsData from '../data/conflicts.json';
 import { Conflict } from '../types';
 import { useToast } from '../hooks/useToast';
 import { format } from 'date-fns';
+import { useEffect } from 'react';
+import { useTimer } from '../contexts/TimerContext';
 
 export const ConflictsPage: React.FC = () => {
   const [conflicts, setConflicts] = useState<Conflict[]>(conflictsData as Conflict[]);
@@ -27,6 +29,24 @@ export const ConflictsPage: React.FC = () => {
   const [overrideConflict, setOverrideConflict] = useState<Conflict | null>(null);
   const [overrideReason, setOverrideReason] = useState('');
   const { showToast } = useToast();
+  const { isTimerActive, countdown, stopAlarm } = useTimer();
+  const [showCriticalAlert, setShowCriticalAlert] = useState(false);
+
+  useEffect(() => {
+  // This new effect just checks if the global timer is running
+  if (isTimerActive) {
+    setShowCriticalAlert(true);
+  } else {
+    setShowCriticalAlert(false); // Also hide the modal if the timer stops
+  }
+}, [isTimerActive]); // This runs whenever the global timer's status changes
+ 
+  // Helper to format the countdown time
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
 
   const filteredConflicts = conflicts.filter(conflict => {
     const matchesStatus = statusFilter === 'All' || conflict.status === statusFilter;
@@ -35,6 +55,7 @@ export const ConflictsPage: React.FC = () => {
   });
 
   const handleResolve = (conflictId: string) => {
+    stopAlarm();
     setConflicts(prev =>
       prev.map(conflict =>
         conflict.id === conflictId
@@ -50,6 +71,29 @@ export const ConflictsPage: React.FC = () => {
     });
 
     setSelectedConflict(null);
+  };
+
+  //NEW handleViewConflicts FUNCTION HERE
+  const handleViewConflicts = () => {
+    const firstCritical = conflicts.find(
+      (c) => c.severity === 'Critical' && c.status === 'Pending'
+    );
+
+    if (firstCritical) {
+      const element = document.getElementById(`conflict-${firstCritical.id}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Find the button within the card and click it
+      const detailsButton = element?.querySelector('.details-button');
+
+      // Use a short timeout to ensure the scroll has finished
+      setTimeout(() => {
+        if (detailsButton instanceof HTMLElement) {
+          detailsButton.click();
+        }
+      }, 500); // 500ms delay
+    }
+    setShowCriticalAlert(false);
   };
 
   // NEW: Function to revert a conflict to Pending status
@@ -84,7 +128,7 @@ export const ConflictsPage: React.FC = () => {
       });
       return;
     }
-
+    stopAlarm();
     setConflicts(prev =>
       prev.map(conflict =>
         conflict.id === conflictId
@@ -247,6 +291,7 @@ export const ConflictsPage: React.FC = () => {
           {filteredConflicts.map((conflict, index) => (
             <motion.div
               key={conflict.id}
+              id={`conflict-${conflict.id}`} // <-- ADD THIS LINE
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
@@ -282,8 +327,8 @@ export const ConflictsPage: React.FC = () => {
                   onClick={() => setSelectedConflict(conflict)}
                   size="sm"
                   variant="outline"
-                  className="flex-1"
-                >
+                  className="flex-1 details-button"
+                > 
                   <Eye className="w-4 h-4 mr-1" />
                   Details
                 </Button>
@@ -534,6 +579,39 @@ export const ConflictsPage: React.FC = () => {
               >
                 <Save className="w-4 h-4 mr-2" />
                 Confirm Override
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {/* Critical Alert Modal */}
+      {showCriticalAlert && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowCriticalAlert(false)}
+          title="Critical Conflict Alert"
+          size="md"
+        >
+          <div className="space-y-4">
+            <div className="bg-red-50 p-4 rounded-lg">
+              <h3 className="text-red-900 font-semibold text-lg mb-2">Immediate Action Required</h3>
+              <p className="text-red-800">
+                There are critical conflicts pending resolution. Please address these conflicts within the next <strong>{formatTime(countdown)}</strong> to avoid any collisions or incidents.
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                onClick={() => setShowCriticalAlert(false)}
+                variant="outline"
+              >
+                Dismiss
+              </Button>
+              <Button
+                 onClick={handleViewConflicts}
+                variant="danger"
+              >
+                View Conflicts
               </Button>
             </div>
           </div>

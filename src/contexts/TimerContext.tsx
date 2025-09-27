@@ -12,6 +12,8 @@ interface TimerContextType {
   isTimerActive: boolean;
   isAlarmPlaying: boolean;
   isAudioUnlocked: boolean;
+  isAlarmEnabled: boolean;
+  toggleAlarmPreference: () => void;
   startCriticalTimer: (duration: number) => void;
   stopAlarm: () => void;
   unlockAudio: () => void;
@@ -24,6 +26,7 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [isAlarmPlaying, setIsAlarmPlaying] = useState(false);
   const [isAudioUnlocked, setIsAudioUnlocked] = useState(false); // Tracks user permission
+  const [isAlarmEnabled, setIsAlarmEnabled] = useState(true);
   const alarmAudio = useMemo(() => new Audio(`/alarm.mp3?t=${new Date().getTime()}`), []);
 
   // Effect #1: Handles the countdown logic
@@ -46,13 +49,13 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Effect #3: Handles the audio playback
   useEffect(() => {
     alarmAudio.loop = true;
-    if (isAlarmPlaying && isAudioUnlocked) {
+    if (isAlarmPlaying && isAudioUnlocked && isAlarmEnabled) {
       alarmAudio.play().catch((error: any) => console.error("Audio play failed:", error));
     } else {
       alarmAudio.pause();
       alarmAudio.currentTime = 0;
     }
-  }, [isAlarmPlaying, isAudioUnlocked, alarmAudio]);
+  }, [isAlarmPlaying, isAudioUnlocked, isAlarmEnabled, alarmAudio]);
 
   const unlockAudio = () => {
     // This function is called by the user click.
@@ -61,6 +64,10 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     alarmAudio.pause();
     setIsAudioUnlocked(true);
     console.log("Audio has been enabled by user interaction.");
+  };
+
+  const toggleAlarmPreference = () => { // NEW: Function to change the setting
+    setIsAlarmEnabled(prev => !prev);
   };
 
   const startCriticalTimer = (duration: number) => {
@@ -74,7 +81,7 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setIsAlarmPlaying(false);
   };
 
-  const value = { countdown, isTimerActive, isAlarmPlaying, isAudioUnlocked, startCriticalTimer, stopAlarm, unlockAudio };
+  const value = { countdown, isTimerActive, isAlarmPlaying, isAudioUnlocked, startCriticalTimer, stopAlarm, unlockAudio, toggleAlarmPreference, isAlarmEnabled };
 
   return <TimerContext.Provider value={value}>{children}</TimerContext.Provider>;
 };

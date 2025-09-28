@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,   } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -22,24 +22,39 @@ import { useEffect } from 'react';
 import { useTimer } from '../contexts/TimerContext';
 
 export const ConflictsPage: React.FC = () => {
-  const [conflicts, setConflicts] = useState<Conflict[]>(conflictsData as Conflict[]);
+  const [conflicts, setConflicts] = useState<Conflict[]>(() => {
+    const savedConflicts = localStorage.getItem('conflictsState');
+    if (savedConflicts) {
+      return JSON.parse(savedConflicts);
+    } else {
+      return conflictsData as Conflict[];
+    }
+  });
   const [selectedConflict, setSelectedConflict] = useState<Conflict | null>(null);
   const [statusFilter, setStatusFilter] = useState('All');
   const [severityFilter, setSeverityFilter] = useState('All');
   const [overrideConflict, setOverrideConflict] = useState<Conflict | null>(null);
   const [overrideReason, setOverrideReason] = useState('');
   const { showToast } = useToast();
-  const { isTimerActive, countdown, stopAlarm } = useTimer();
+  const { isTimerActive, countdown, stopAlarm, stopCriticalTimer } = useTimer();
   const [showCriticalAlert, setShowCriticalAlert] = useState(false);
 
   useEffect(() => {
-  // This new effect just checks if the global timer is running
-  if (isTimerActive) {
-    setShowCriticalAlert(true);
-  } else {
-    setShowCriticalAlert(false); // Also hide the modal if the timer stops
-  }
-}, [isTimerActive]); // This runs whenever the global timer's status changes
+    localStorage.setItem('conflictsState', JSON.stringify(conflicts));
+  }, [conflicts]);
+
+  useEffect(() => {
+    // Check for pending critical conflicts in the CURRENT state
+    const hasCriticalPendingConflict = conflicts.some(
+      c => c.severity === 'Critical' && c.status === 'Pending'
+    );
+    // Only show the alert if the timer is active AND a critical conflict still exists
+    if (isTimerActive && hasCriticalPendingConflict) {
+      setShowCriticalAlert(true);
+    } else {
+      setShowCriticalAlert(false);
+    }
+  }, [isTimerActive, conflicts]); // <-- IMPORTANT: Add 'conflicts' to the dependency array
  
   // Helper to format the countdown time
   const formatTime = (seconds: number) => {
@@ -56,13 +71,25 @@ export const ConflictsPage: React.FC = () => {
 
   const handleResolve = (conflictId: string) => {
     stopAlarm();
-    setConflicts(prev =>
-      prev.map(conflict =>
+    setConflicts(prev => {
+      const newConflicts = prev.map(conflict =>
         conflict.id === conflictId
           ? { ...conflict, status: 'Resolved' as const, resolvedAt: new Date().toISOString() }
           : conflict
-      )
-    );
+      );
+
+      // Check if there are any critical pending conflicts LEFT
+      const hasMoreCritical = newConflicts.some(
+        c => c.severity === 'Critical' && c.status === 'Pending'
+      );
+
+      // If not, stop the master timer
+      if (!hasMoreCritical) {
+        stopCriticalTimer();
+      }
+
+      return newConflicts;
+    });
 
     showToast({
       type: 'success',
@@ -150,6 +177,16 @@ export const ConflictsPage: React.FC = () => {
 
     setOverrideConflict(null);
     setOverrideReason('');
+  };
+
+  const handleResetConflicts = () => {
+    localStorage.removeItem('conflictsState');
+    setConflicts(conflictsData as Conflict[]);
+    showToast({
+      type: 'info',
+      title: 'Conflicts Reset',
+      message: 'All conflicts have been reset to their default state.',
+    });
   };
 
   const getSeverityColor = (severity: string) => {
@@ -260,6 +297,9 @@ export const ConflictsPage: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">All Conflicts</h2>
           <div className="flex items-center space-x-4">
+            <Button onClick={handleResetConflicts} variant="outline" size="sm">
+              Reset All
+            </Button>
             <div className="flex items-center space-x-2">
               <Filter className="w-4 h-4 text-gray-400" />
               <select

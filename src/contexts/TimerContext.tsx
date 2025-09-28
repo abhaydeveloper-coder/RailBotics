@@ -15,6 +15,7 @@ interface TimerContextType {
   isAlarmEnabled: boolean;
   toggleAlarmPreference: () => void;
   startCriticalTimer: (duration: number) => void;
+  stopCriticalTimer: () => void;
   stopAlarm: () => void;
   unlockAudio: () => void;
 }
@@ -57,6 +58,12 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [isAlarmPlaying, isAudioUnlocked, isAlarmEnabled, alarmAudio]);
 
+  const stopCriticalTimer = () => {
+    setIsTimerActive(false);
+    setIsAlarmPlaying(false);
+    setCountdown(0); // Reset countdown
+  };
+
   const unlockAudio = () => {
     // This function is called by the user click.
     // It plays and immediately pauses the audio to satisfy browser policy.
@@ -81,7 +88,7 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setIsAlarmPlaying(false);
   };
 
-  const value = { countdown, isTimerActive, isAlarmPlaying, isAudioUnlocked, startCriticalTimer, stopAlarm, unlockAudio, toggleAlarmPreference, isAlarmEnabled };
+  const value = { countdown, isTimerActive, isAlarmPlaying, isAudioUnlocked, startCriticalTimer, stopAlarm, unlockAudio, toggleAlarmPreference, isAlarmEnabled, stopCriticalTimer };
 
   return <TimerContext.Provider value={value}>{children}</TimerContext.Provider>;
 };
